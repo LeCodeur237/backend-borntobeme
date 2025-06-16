@@ -1,0 +1,1250 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "BornToMe API Documentation",
+        "description": "API documentation for the BornToMe Blog application. This API allows for user authentication, article management, and commenting functionalities.",
+        "contact": {
+            "email": "judek@example.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api",
+            "description": "BornToMe API Server"
+        }
+    ],
+    "paths": {
+        "/articles": {
+            "get": {
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "Get list of articles (Publicly accessible)",
+                "description": "Returns a paginated list of articles. This endpoint is publicly accessible.",
+                "operationId": "getArticlesList",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Article"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (e.g., invalid pagination parameters)"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "Create a new article",
+                "description": "Creates a new article and returns the created article. The authenticated user becomes the author.",
+                "operationId": "storeArticle",
+                "requestBody": {
+                    "description": "Article data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ArticleInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Article created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Article"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/articles/{id}": {
+            "get": {
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "Get article by ID (Publicly accessible)",
+                "description": "Returns a single article. This endpoint is publicly accessible.",
+                "operationId": "getArticleById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of article to return",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Article"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Article not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "Update an existing article",
+                "description": "Updates an article. Regular users can only update their own articles. Admins can update any article.",
+                "operationId": "updateArticle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of article to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Article data to update",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ArticleInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Article updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Article"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User does not own this article or lacks permission"
+                    },
+                    "404": {
+                        "description": "Article not found"
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "Delete an article",
+                "description": "Deletes a specific article by ID. Regular users can only delete their own articles. Admins can delete any article.",
+                "operationId": "deleteArticle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of article to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Article deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Article deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User does not own this article or lacks permission"
+                    },
+                    "404": {
+                        "description": "Article not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new user",
+                "description": "Creates a new user account and returns a user object and an access token.",
+                "operationId": "registerUser",
+                "requestBody": {
+                    "description": "User registration data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "fullname",
+                                    "email",
+                                    "password",
+                                    "password_confirmation",
+                                    "datebirthday",
+                                    "gender",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "fullname": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john.doe@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8,
+                                        "example": "password123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8,
+                                        "example": "password123"
+                                    },
+                                    "datebirthday": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "enum": [
+                                            "male",
+                                            "female",
+                                            "other"
+                                        ],
+                                        "example": "male"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "user",
+                                            "admin",
+                                            "editor"
+                                        ],
+                                        "example": "user"
+                                    },
+                                    "linkphoto": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "example": "http://example.com/photo.jpg",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User registered successfully"
+                                        },
+                                        "access_token": {
+                                            "type": "string",
+                                            "example": "1|abcdef123456"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Log in an existing user",
+                "description": "Logs in a user and returns an access token and user details.",
+                "operationId": "loginUser",
+                "requestBody": {
+                    "description": "User login credentials",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john.doe@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User logged in successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User logged in successfully"
+                                        },
+                                        "access_token": {
+                                            "type": "string",
+                                            "example": "2|abcdef123456"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid login details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid login details"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Log out the current user",
+                "description": "Invalidates the current user's access token.",
+                "operationId": "logoutUser",
+                "responses": {
+                    "200": {
+                        "description": "Successfully logged out",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Successfully logged out"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/user": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get the authenticated user's details",
+                "description": "Returns the details of the currently authenticated user.",
+                "operationId": "getAuthenticatedUser",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/email/resend-verification": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Resend email verification notification",
+                "description": "Resends the email verification link to the authenticated user if their email is not yet verified.",
+                "operationId": "resendVerificationEmail",
+                "responses": {
+                    "200": {
+                        "description": "Verification link sent.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Verification link sent."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Email already verified.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email already verified."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/email/verify/{id}/{hash}": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Verify user's email address",
+                "description": "Verifies the user's email address using the ID and hash from the verification link. This endpoint is typically accessed by clicking a link from an email.",
+                "operationId": "verifyEmailAddress",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User ID (UUID)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "hash",
+                        "in": "path",
+                        "description": "Verification hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "expires",
+                        "in": "query",
+                        "description": "Expiration timestamp for the signed URL",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "signature",
+                        "in": "query",
+                        "description": "Signature for the signed URL",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email successfully verified.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email address successfully verified."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "202": {
+                        "description": "Email already verified.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email address already verified."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid verification link or hash mismatch."
+                    },
+                    "403": {
+                        "description": "Invalid or expired verification link (signature validation failed)."
+                    },
+                    "404": {
+                        "description": "User not found for verification."
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get list of users (Admin only)",
+                "description": "Returns a paginated list of users. This endpoint is restricted to administrators.",
+                "operationId": "getUsersList",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Admin access required"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/{user_id}": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get user information",
+                "description": "Returns user data. Admins can fetch any user. Regular users can only fetch their own profile.",
+                "operationId": "getUserById",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "ID of user to return (UUID format)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Cannot access this user's profile"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update user information",
+                "description": "Updates user data. Admins can update any user (including role). Regular users can only update their own profile (excluding role).",
+                "operationId": "updateUser",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "ID of user to update (UUID format)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "User data to update",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "fullname": {
+                                        "type": "string",
+                                        "example": "Jane Doe Updated"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "jane.doe.updated@example.com"
+                                    },
+                                    "datebirthday": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1991-06-16"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "enum": [
+                                            "male",
+                                            "female",
+                                            "other"
+                                        ],
+                                        "example": "female"
+                                    },
+                                    "linkphoto": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "example": "http://example.com/new_photo.jpg",
+                                        "nullable": true
+                                    },
+                                    "password": {
+                                        "description": "Optional: Provide to change password",
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8,
+                                        "example": "newSecurePassword123"
+                                    },
+                                    "password_confirmation": {
+                                        "description": "Required if password is provided",
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8,
+                                        "example": "newSecurePassword123"
+                                    },
+                                    "role": {
+                                        "description": "Admin only: Can update user role",
+                                        "type": "string",
+                                        "enum": [
+                                            "user",
+                                            "admin",
+                                            "editor"
+                                        ],
+                                        "example": "user"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Cannot update this user's profile/role"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete a user (Admin only)",
+                "description": "Deletes a user. This endpoint is restricted to administrators.",
+                "operationId": "deleteUser",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "ID of user to delete (UUID format)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Admin access required or cannot delete self"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ValidationError": {
+                "title": "Validation Error",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "The given data was invalid."
+                    },
+                    "errors": {
+                        "type": "object",
+                        "example": {
+                            "field_name": [
+                                "Error message for this field."
+                            ]
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Article": {
+                "title": "Article Model",
+                "description": "Represents an article in the blog.",
+                "required": [
+                    "title",
+                    "category",
+                    "content"
+                ],
+                "properties": {
+                    "idarticles": {
+                        "description": "Primary key ID of the article",
+                        "type": "integer",
+                        "format": "int64",
+                        "readOnly": true,
+                        "example": 1
+                    },
+                    "title": {
+                        "description": "Title of the article",
+                        "type": "string",
+                        "example": "Understanding Laravel"
+                    },
+                    "category": {
+                        "description": "Category of the article",
+                        "type": "string",
+                        "example": "PHP Frameworks"
+                    },
+                    "content": {
+                        "description": "Main content of the article",
+                        "type": "string",
+                        "example": "Laravel is a web application framework..."
+                    },
+                    "user_id": {
+                        "description": "UUID of the author (User)",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                    },
+                    "link_picture": {
+                        "description": "URL to the article's main picture",
+                        "type": "string",
+                        "format": "url",
+                        "example": "http://example.com/laravel.jpg",
+                        "nullable": true
+                    },
+                    "status": {
+                        "description": "Status of the article",
+                        "type": "string",
+                        "default": "draft",
+                        "enum": [
+                            "draft",
+                            "published",
+                            "archived"
+                        ],
+                        "example": "published"
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-02-01T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-02-01T11:00:00Z"
+                    },
+                    "author": {
+                        "$ref": "#/components/schemas/User"
+                    }
+                },
+                "type": "object"
+            },
+            "ArticleInput": {
+                "title": "Article Input",
+                "description": "Data required to create or update an article.",
+                "required": [
+                    "title",
+                    "category",
+                    "content"
+                ],
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "example": "My New Article"
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "Tutorials"
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "This is the content of my new article."
+                    },
+                    "link_picture": {
+                        "type": "string",
+                        "format": "url",
+                        "example": "http://example.com/new_article.png",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "default": "draft",
+                        "enum": [
+                            "draft",
+                            "published",
+                            "archived"
+                        ],
+                        "example": "draft"
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "title": "User Model",
+                "description": "User model representing an application user.",
+                "required": [
+                    "iduser",
+                    "fullname",
+                    "email",
+                    "datebirthday",
+                    "gender",
+                    "role"
+                ],
+                "properties": {
+                    "iduser": {
+                        "description": "Primary key UUID of the user",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                    },
+                    "fullname": {
+                        "description": "User's full name",
+                        "type": "string",
+                        "example": "Jane Doe"
+                    },
+                    "email": {
+                        "description": "User's email address",
+                        "type": "string",
+                        "format": "email",
+                        "example": "jane.doe@example.com"
+                    },
+                    "datebirthday": {
+                        "description": "User's date of birth",
+                        "type": "string",
+                        "format": "date",
+                        "example": "1995-05-15"
+                    },
+                    "gender": {
+                        "description": "User's gender",
+                        "type": "string",
+                        "enum": [
+                            "male",
+                            "female",
+                            "other"
+                        ],
+                        "example": "female"
+                    },
+                    "linkphoto": {
+                        "description": "URL to user's profile photo",
+                        "type": "string",
+                        "format": "url",
+                        "example": "http://example.com/jane.jpg",
+                        "nullable": true
+                    },
+                    "role": {
+                        "description": "User's role in the application",
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "admin",
+                            "editor"
+                        ],
+                        "example": "user"
+                    },
+                    "created_at": {
+                        "description": "Timestamp of user creation",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-01-01T12:00:00Z"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp of last user update",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-01-01T12:30:00Z"
+                    },
+                    "email_verified_at": {
+                        "description": "Timestamp of email verification",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-01-01T12:05:00Z",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter token in format (Bearer <token>)",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Authentication",
+            "description": "User authentication endpoints (register, login, logout)"
+        },
+        {
+            "name": "Users",
+            "description": "User related endpoints (e.g., fetching authenticated user details)"
+        },
+        {
+            "name": "Articles",
+            "description": "Article management endpoints (CRUD operations for articles)"
+        }
+    ]
+}

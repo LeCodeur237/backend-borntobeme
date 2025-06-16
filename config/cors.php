@@ -17,15 +17,10 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'], // Be more specific or use ['*'] if truly needed
+    'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        // Add the specific origin of your frontend application here.
-        // For example, if your frontend runs on http://localhost:3000:
-        'http://localhost:3000',
-        'http://localhost:5173',
-        // If you have other environments (e.g., staging, production), add their origins too.
-    ],
+
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 

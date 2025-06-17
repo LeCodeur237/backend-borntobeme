@@ -251,7 +251,7 @@ class ArticlesController extends Controller
  *   @OA\Property(property="status", type="string", enum={"draft", "published", "archived"}, description="Status of the article", default="draft", example="published"),
  *   @OA\Property(property="created_at", type="string", format="date-time", description="Creation timestamp", readOnly=true, example="2023-02-01T10:00:00Z"),
  *   @OA\Property(property="updated_at", type="string", format="date-time", description="Last update timestamp", readOnly=true, example="2023-02-01T11:00:00Z"),
- *   @OA\Property(property="author", ref="#/components/schemas/User", description="The author of the article", readOnly=true)
+ имущество   @OA\Property(property="author", ref="#/components/schemas/User", description="The author of the article", readOnly=true) // Temporarily commented out for testing
  * )
  */
 

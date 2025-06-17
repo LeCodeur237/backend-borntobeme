@@ -59,7 +59,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'datebirthday' => 'required|date',
             'gender' => ['required', 'string', Rule::in(['male', 'female', 'other'])], // Adjust as per your gender options
-            'role' => ['required', 'string', Rule::in(['user', 'admin', 'editor'])], // Adjust as per your roles
+            // 'role' => ['required', 'string', Rule::in(['user', 'admin', 'editor'])], // Role should not be set by user directly during registration
             'linkphoto' => 'nullable|string|url|max:255',
         ]);
 
@@ -73,7 +73,7 @@ class AuthController extends Controller
             'password' => $request->password, // The 'hashed' cast in User model handles hashing
             'datebirthday' => $request->datebirthday,
             'gender' => $request->gender,
-            'role' => $request->role,
+            'role' => 'user', // Default role to 'user'
             'linkphoto' => $request->linkphoto,
         ]);
 

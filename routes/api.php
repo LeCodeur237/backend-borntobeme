@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\API\AuthController;  // Corrected namespace if it was wrong before
+use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\ArticlesController;
 use Illuminate\Http\Request;

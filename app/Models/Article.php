@@ -17,6 +17,7 @@ use OpenApi\Annotations as OA; // Required for OA annotations
  *     @OA\Property(property="idarticles", type="integer", format="int64", description="Primary key ID of the article", readOnly=true, example=1),
  *     @OA\Property(property="title", type="string", description="Title of the article", example="Understanding Laravel"),
  *     @OA\Property(property="category", type="string", description="Category of the article", example="PHP Frameworks"),
+ *     @OA\Property(property="description", type="string", nullable=true, description="A short description or summary of the article", example="A brief overview of Laravel's core concepts."),
  *     @OA\Property(property="content", type="string", description="Main content of the article", example="Laravel is a web application framework..."),
  *     @OA\Property(property="user_id", type="string", format="uuid", description="UUID of the author (User)", example="a1b2c3d4-e5f6-7890-1234-567890abcdef"),
  *     @OA\Property(property="link_picture", type="string", format="url", nullable=true, description="URL to the article's main picture", example="http://example.com/laravel.jpg"),
@@ -34,6 +35,7 @@ use OpenApi\Annotations as OA; // Required for OA annotations
  *     required={"title", "category", "content"},
  *     @OA\Property(property="title", type="string", example="My New Article"),
  *     @OA\Property(property="category", type="string", example="Tutorials"),
+ *     @OA\Property(property="description", type="string", nullable=true, example="This article covers the basics of X."),
  *     @OA\Property(property="content", type="string", example="This is the content of my new article."),
  *     @OA\Property(property="link_picture", type="string", format="url", nullable=true, example="http://example.com/new_article.png"),
  *     @OA\Property(property="status", type="string", enum={"draft", "published", "archived"}, example="draft", default="draft")
@@ -66,6 +68,7 @@ class Article extends Model
     protected $fillable = [
         'title',
         'category',
+        'description',
         'content',
         'user_id',
         'link_picture',

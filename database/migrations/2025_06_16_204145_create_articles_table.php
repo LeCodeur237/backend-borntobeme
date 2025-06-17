@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id('idarticles'); // Primary key, auto-incrementing
             $table->string('title');
             $table->string('category'); // Consider a separate table for categories
+            $table->string('description')->nullable(); // Short description for the article
             $table->text('content');
             $table->uuid('user_id'); // Foreign key for the author (User)
             $table->string('link_picture')->nullable(); // URL to the article's main picture

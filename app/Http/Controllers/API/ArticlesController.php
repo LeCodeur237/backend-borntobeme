@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Mews\Purifier\Facades\Purifier; // Import Purifier
 use OpenApi\Annotations as OA;
 
 class ArticlesController extends Controller
@@ -18,9 +19,10 @@ class ArticlesController extends Controller
      *      operationId="getArticlesList",
      *      tags={"Articles"},
      *      summary="Get list of articles",
-     *      description="Returns a paginated list of all articles.",
+     *      description="Returns a paginated list of articles. Can be filtered by status or category.",
      *      @OA\Parameter(name="page", in="query", description="Page number", required=false, @OA\Schema(type="integer")),
-     *      @OA\Parameter(name="per_page", in="query", description="Number of articles per page", required=false, @OA\Schema(type="integer", default=15)),
+     *      @OA\Parameter(name="status", in="query", description="Filter by article status (draft, published, archived)", required=false, @OA\Schema(type="string", enum={"draft", "published", "archived"})),
+     *      @OA\Parameter(name="category", in="query", description="Filter by article category", required=false, @OA\Schema(type="string")),
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
@@ -46,10 +48,16 @@ class ArticlesController extends Controller
     public function index(Request $request)
     {
         $query = Article::with('author');
-        $perPage = $request->input('per_page', 15);
 
-        // Removed status and category filters
-        $articles = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->has('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        $articles = $query->orderBy('created_at', 'desc')->paginate(15);
         return response()->json($articles);
     }
 
@@ -91,6 +99,9 @@ class ArticlesController extends Controller
 
         $validatedData = $validator->validated();
         $validatedData['user_id'] = Auth::id(); // Associate with the authenticated user
+
+        // Sanitize HTML content from Quill editor
+        $validatedData['content'] = Purifier::clean($validatedData['content']);
 
         // If status is not provided, it will use the DB default 'draft'
         // or you can set it explicitly here if needed.
@@ -177,7 +188,12 @@ class ArticlesController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $article->update($validator->validated());
+        $validatedData = $validator->validated();
+        // Sanitize HTML content from Quill editor if it's being updated
+        if (isset($validatedData['content'])) {
+            $validatedData['content'] = Purifier::clean($validatedData['content']);
+        }
+        $article->update($validatedData);
         $article->load('author'); // Eager load author information
 
         return response()->json($article);

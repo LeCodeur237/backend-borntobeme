@@ -14,7 +14,7 @@
     },
     "servers": [
         {
-            "url": "https://born-to-be-me.com/api",
+            "url": "https://api.born-to-be-me.com/api",
             "description": "BornToMe API Server"
         }
     ],

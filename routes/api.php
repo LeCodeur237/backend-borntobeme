@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;  // Corrected namespace if it was wrong before
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\ArticlesController;
+use App\Http\Controllers\API\AuthController;  // Corrected namespace if it was wrong before
+use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\ArticlesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 

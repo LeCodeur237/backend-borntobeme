@@ -354,8 +354,7 @@
                                     "password",
                                     "password_confirmation",
                                     "datebirthday",
-                                    "gender",
-                                    "role"
+                                    "gender"
                                 ],
                                 "properties": {
                                     "fullname": {
@@ -392,15 +391,6 @@
                                             "other"
                                         ],
                                         "example": "male"
-                                    },
-                                    "role": {
-                                        "type": "string",
-                                        "enum": [
-                                            "user",
-                                            "admin",
-                                            "editor"
-                                        ],
-                                        "example": "user"
                                     },
                                     "linkphoto": {
                                         "type": "string",

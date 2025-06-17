@@ -25,14 +25,13 @@ class AuthController extends Controller
      *          required=true,
      *          description="User registration data",
      *          @OA\JsonContent(
-     *              required={"fullname","email","password","password_confirmation","datebirthday","gender","role"},
+     *              required={"fullname","email","password","password_confirmation","datebirthday","gender"},
      *              @OA\Property(property="fullname", type="string", example="John Doe"),
      *              @OA\Property(property="email", type="string", format="email", example="john.doe@example.com"),
      *              @OA\Property(property="password", type="string", format="password", example="password123", minLength=8),
      *              @OA\Property(property="password_confirmation", type="string", format="password", example="password123", minLength=8),
      *              @OA\Property(property="datebirthday", type="string", format="date", example="1990-01-01"),
      *              @OA\Property(property="gender", type="string", enum={"male", "female", "other"}, example="male"),
-     *              @OA\Property(property="role", type="string", enum={"user", "admin", "editor"}, example="user"),
      *              @OA\Property(property="linkphoto", type="string", format="url", nullable=true, example="http://example.com/photo.jpg")
      *          )
      *      ),
@@ -59,7 +58,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'datebirthday' => 'required|date',
             'gender' => ['required', 'string', Rule::in(['male', 'female', 'other'])], // Adjust as per your gender options
-            // 'role' => ['required', 'string', Rule::in(['user', 'admin', 'editor'])], // Role should not be set by user directly during registration
+            // 'role' => ['required', 'string', Rule::in(['user', 'admin', 'editor'])], // Role is now defaulted, not user-settable at registration
             'linkphoto' => 'nullable|string|url|max:255',
         ]);
 

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('category'); // Consider a separate table for categories
             $table->text('content');
             $table->uuid('user_id'); // Foreign key for the author (User)
+            $table->string('link_picture')->nullable(); // URL to the article's main picture
             $table->string('status')->default('draft'); // e.g., draft, published, archived
             $table->timestamps(); // created_at and updated_at
 

@@ -24,8 +24,8 @@
                 "tags": [
                     "Articles"
                 ],
-                "summary": "Get list of articles (Publicly accessible)",
-                "description": "Returns a paginated list of articles. This endpoint is publicly accessible.",
+                "summary": "Get list of articles",
+                "description": "Returns a paginated list of articles. Can be filtered by status or category.",
                 "operationId": "getArticlesList",
                 "parameters": [
                     {
@@ -34,18 +34,30 @@
                         "description": "Page number",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "default": 1
+                            "type": "integer"
                         }
                     },
                     {
-                        "name": "per_page",
+                        "name": "status",
                         "in": "query",
-                        "description": "Number of items per page",
+                        "description": "Filter by article status (draft, published, archived)",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "default": 15
+                            "type": "string",
+                            "enum": [
+                                "draft",
+                                "published",
+                                "archived"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Filter by article category",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
@@ -56,26 +68,63 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "current_page": {
+                                            "type": "integer"
+                                        },
                                         "data": {
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/components/schemas/Article"
                                             }
                                         },
-                                        "links": {
-                                            "type": "object"
+                                        "first_page_url": {
+                                            "type": "string",
+                                            "format": "url"
                                         },
-                                        "meta": {
-                                            "type": "object"
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string",
+                                            "format": "url"
+                                        },
+                                        "links": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "format": "url",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string",
+                                            "format": "url"
+                                        },
+                                        "per_page": {
+                                            "type": "integer"
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "format": "url",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
                                         }
                                     },
                                     "type": "object"
                                 }
                             }
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request (e.g., invalid pagination parameters)"
                     }
                 }
             },
@@ -84,10 +133,10 @@
                     "Articles"
                 ],
                 "summary": "Create a new article",
-                "description": "Creates a new article and returns the created article. The authenticated user becomes the author.",
+                "description": "Creates a new article. The authenticated user will be set as the author.",
                 "operationId": "storeArticle",
                 "requestBody": {
-                    "description": "Article data",
+                    "description": "Article data to create",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -112,7 +161,7 @@
                         "description": "Unauthenticated"
                     },
                     "422": {
-                        "description": "Validation error",
+                        "description": "Validation Error",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -129,22 +178,23 @@
                 ]
             }
         },
-        "/articles/{id}": {
+        "/articles/{article_id}": {
             "get": {
                 "tags": [
                     "Articles"
                 ],
-                "summary": "Get article by ID (Publicly accessible)",
-                "description": "Returns a single article. This endpoint is publicly accessible.",
+                "summary": "Get article information",
+                "description": "Returns a single article by its ID.",
                 "operationId": "getArticleById",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "article_id",
                         "in": "path",
                         "description": "ID of article to return",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "format": "int64"
                         }
                     }
                 ],
@@ -169,16 +219,17 @@
                     "Articles"
                 ],
                 "summary": "Update an existing article",
-                "description": "Updates an article. Regular users can only update their own articles. Admins can update any article.",
+                "description": "Updates an existing article. Only the author or an admin can perform this action.",
                 "operationId": "updateArticle",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "article_id",
                         "in": "path",
                         "description": "ID of article to update",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "format": "int64"
                         }
                     }
                 ],
@@ -208,13 +259,13 @@
                         "description": "Unauthenticated"
                     },
                     "403": {
-                        "description": "Forbidden - User does not own this article or lacks permission"
+                        "description": "Forbidden - Not authorized to update this article"
                     },
                     "404": {
                         "description": "Article not found"
                     },
                     "422": {
-                        "description": "Validation error",
+                        "description": "Validation Error",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -235,16 +286,17 @@
                     "Articles"
                 ],
                 "summary": "Delete an article",
-                "description": "Deletes a specific article by ID. Regular users can only delete their own articles. Admins can delete any article.",
+                "description": "Deletes an existing article. Only the author or an admin can perform this action.",
                 "operationId": "deleteArticle",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "article_id",
                         "in": "path",
                         "description": "ID of article to delete",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "format": "int64"
                         }
                     }
                 ],
@@ -269,7 +321,7 @@
                         "description": "Unauthenticated"
                     },
                     "403": {
-                        "description": "Forbidden - User does not own this article or lacks permission"
+                        "description": "Forbidden - Not authorized to delete this article"
                     },
                     "404": {
                         "description": "Article not found"

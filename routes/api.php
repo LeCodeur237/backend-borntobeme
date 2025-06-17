@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;  // Corrected namespace if it was wrong before
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\ArticleController; // Ensure this is the correct controller
+use App\Http\Controllers\Api\ArticlesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,10 +20,6 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Publicly accessible route to get all articles
-Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index.public');
-// Publicly accessible route to get a single article by ID
-Route::get('/articles/{id}', [ArticleController::class, 'show'])->name('articles.show.public')->where('id', '[0-9]+');
 
 // Email Verification Route (must be publicly accessible but signed)
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
@@ -37,14 +33,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/email/resend-verification', [AuthController::class, 'resendEmailVerification'])->name('verification.send');
-    // Article routes requiring authentication (create, update, delete, show individual)
-    // We exclude 'index' and 'show' as they are now public.
-    // We specify 'id' as the parameter name to match the controller methods.
-    Route::apiResource('articles', ArticleController::class)->except(['index', 'show'])->parameters(['articles' => 'id']);
 
     // User Management Routes (excluding create, as registration is handled by AuthController)
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{user_id}', [UserController::class, 'show'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'); // UUID constraint
     Route::put('/users/{user_id}', [UserController::class, 'update'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
     Route::delete('/users/{user_id}', [UserController::class, 'destroy'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+
+    // Article Management Routes (Create, Update, Delete require authentication)
+    Route::post('/articles', [ArticlesController::class, 'store']);
+    Route::put('/articles/{article}', [ArticlesController::class, 'update'])->where('article', '[0-9]+');
+    Route::delete('/articles/{article}', [ArticlesController::class, 'destroy'])->where('article', '[0-9]+');
 });
+
+// Public Article Routes (Index, Show)
+Route::get('/articles', [ArticlesController::class, 'index']);
+Route::get('/articles/{article}', [ArticlesController::class, 'show'])->where('article', '[0-9]+');

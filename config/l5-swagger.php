@@ -45,8 +45,6 @@ return [
                  */
                 'annotations' => [
                     base_path('app'),
-                    app_path('Http/Controllers'), // This will scan your base Controller.php and subfolders like Api/
-                    app_path('Models'),
                 ],
             ],
         ],

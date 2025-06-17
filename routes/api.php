@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;  // Corrected namespace if it was wrong before
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ArticlesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -38,4 +39,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user_id}', [UserController::class, 'show'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'); // UUID constraint
     Route::put('/users/{user_id}', [UserController::class, 'update'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
     Route::delete('/users/{user_id}', [UserController::class, 'destroy'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+
+    // Article Management Routes (Create, Update, Delete require authentication)
+    Route::post('/articles', [ArticlesController::class, 'store']);
+    Route::put('/articles/{article}', [ArticlesController::class, 'update'])->where('article', '[0-9]+');
+    Route::delete('/articles/{article}', [ArticlesController::class, 'destroy'])->where('article', '[0-9]+');
 });
+
+// Public Article Routes (Index, Show)
+Route::get('/articles', [ArticlesController::class, 'index']);
+Route::get('/articles/{article}', [ArticlesController::class, 'show'])->where('article', '[0-9]+');

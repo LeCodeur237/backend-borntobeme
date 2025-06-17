@@ -14,7 +14,7 @@
     },
     "servers": [
         {
-            "url": "http://http://149.102.137.13/:8000/api",
+            "url": "http://149.102.137.13/:8000/api",
             "description": "BornToMe API Server"
         }
     ],

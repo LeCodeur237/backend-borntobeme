@@ -25,7 +25,7 @@
                     "Articles"
                 ],
                 "summary": "Get list of articles",
-                "description": "Returns a paginated list of all articles.",
+                "description": "Returns a paginated list of articles. Can be filtered by status or category.",
                 "operationId": "getArticlesList",
                 "parameters": [
                     {
@@ -38,13 +38,26 @@
                         }
                     },
                     {
-                        "name": "per_page",
+                        "name": "status",
                         "in": "query",
-                        "description": "Number of articles per page",
+                        "description": "Filter by article status (draft, published, archived)",
                         "required": false,
                         "schema": {
-                            "type": "integer",
-                            "default": 15
+                            "type": "string",
+                            "enum": [
+                                "draft",
+                                "published",
+                                "archived"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Filter by article category",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],

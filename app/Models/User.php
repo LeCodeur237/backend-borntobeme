@@ -128,6 +128,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Article::class, 'user_id', 'iduser');
     }
 
+    /**
+     * Get the books published/sold by the user.
+     */
+    public function books(): HasMany
+    {
+        return $this->hasMany(Book::class, 'user_id', 'iduser');
+    }
+
 
 
     /**

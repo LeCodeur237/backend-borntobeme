@@ -18,10 +18,9 @@ class ArticlesController extends Controller
      *      operationId="getArticlesList",
      *      tags={"Articles"},
      *      summary="Get list of articles",
-     *      description="Returns a paginated list of articles. Can be filtered by status or category.",
+     *      description="Returns a paginated list of all articles.",
      *      @OA\Parameter(name="page", in="query", description="Page number", required=false, @OA\Schema(type="integer")),
-     *      @OA\Parameter(name="status", in="query", description="Filter by article status (draft, published, archived)", required=false, @OA\Schema(type="string", enum={"draft", "published", "archived"})),
-     *      @OA\Parameter(name="category", in="query", description="Filter by article category", required=false, @OA\Schema(type="string")),
+     *      @OA\Parameter(name="per_page", in="query", description="Number of articles per page", required=false, @OA\Schema(type="integer", default=15)),
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
@@ -47,16 +46,10 @@ class ArticlesController extends Controller
     public function index(Request $request)
     {
         $query = Article::with('author');
+        $perPage = $request->input('per_page', 15);
 
-        if ($request->has('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->has('category')) {
-            $query->where('category', $request->input('category'));
-        }
-
-        $articles = $query->orderBy('created_at', 'desc')->paginate(15);
+        // Removed status and category filters
+        $articles = $query->orderBy('created_at', 'desc')->paginate($perPage);
         return response()->json($articles);
     }
 

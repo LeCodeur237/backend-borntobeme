@@ -14,7 +14,7 @@
     },
     "servers": [
         {
-            "url": "https://api.born-to-be-me.com/api",
+            "url": "https://born-to-be-me.com/api",
             "description": "BornToMe API Server"
         }
     ],
@@ -25,7 +25,7 @@
                     "Articles"
                 ],
                 "summary": "Get list of articles",
-                "description": "Returns a paginated list of articles. Can be filtered by status or category.",
+                "description": "Returns a paginated list of all articles.",
                 "operationId": "getArticlesList",
                 "parameters": [
                     {
@@ -38,26 +38,13 @@
                         }
                     },
                     {
-                        "name": "status",
+                        "name": "per_page",
                         "in": "query",
-                        "description": "Filter by article status (draft, published, archived)",
+                        "description": "Number of articles per page",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "enum": [
-                                "draft",
-                                "published",
-                                "archived"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "category",
-                        "in": "query",
-                        "description": "Filter by article category",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "default": 15
                         }
                     }
                 ],

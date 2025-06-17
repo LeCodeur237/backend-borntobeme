@@ -1434,6 +1434,12 @@
                         "type": "string",
                         "example": "PHP Frameworks"
                     },
+                    "description": {
+                        "description": "A short description or summary of the article",
+                        "type": "string",
+                        "example": "A brief overview of Laravel's core concepts.",
+                        "nullable": true
+                    },
                     "content": {
                         "description": "Main content of the article",
                         "type": "string",
@@ -1499,6 +1505,11 @@
                     "category": {
                         "type": "string",
                         "example": "Tutorials"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "This article covers the basics of X.",
+                        "nullable": true
                     },
                     "content": {
                         "type": "string",

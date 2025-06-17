@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage; // Import Storage facade
 use Mews\Purifier\Facades\Purifier; // Import Purifier
 use OpenApi\Annotations as OA;
 
@@ -89,7 +90,7 @@ class ArticlesController extends Controller
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:255',
             'content' => 'required|string',
-            'link_picture' => 'nullable|url|max:255',
+            'link_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate as an image
             'status' => ['nullable', 'string', Rule::in(['draft', 'published', 'archived'])],
         ]);
 
@@ -102,6 +103,12 @@ class ArticlesController extends Controller
 
         // Sanitize HTML content from Quill editor
         $validatedData['content'] = Purifier::clean($validatedData['content']);
+
+        // Handle file upload for link_picture
+        if ($request->hasFile('link_picture')) {
+            $path = $request->file('link_picture')->store('articles', 'public');
+            $validatedData['link_picture'] = Storage::url($path);
+        }
 
         // If status is not provided, it will use the DB default 'draft'
         // or you can set it explicitly here if needed.
@@ -180,7 +187,7 @@ class ArticlesController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'category' => 'sometimes|required|string|max:255',
             'content' => 'sometimes|required|string',
-            'link_picture' => 'nullable|url|max:255',
+            'link_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate as an image
             'status' => ['sometimes', 'required', 'string', Rule::in(['draft', 'published', 'archived'])],
         ]);
 
@@ -192,6 +199,18 @@ class ArticlesController extends Controller
         // Sanitize HTML content from Quill editor if it's being updated
         if (isset($validatedData['content'])) {
             $validatedData['content'] = Purifier::clean($validatedData['content']);
+        }
+
+        // Handle file upload for link_picture during update
+        if ($request->hasFile('link_picture')) {
+            // Optionally, delete the old image if it exists
+            if ($article->link_picture) {
+                // Convert URL to path relative to the storage/app/public directory
+                $oldPath = str_replace(Storage::url(''), '', $article->link_picture);
+                Storage::disk('public')->delete($oldPath);
+            }
+            $path = $request->file('link_picture')->store('articles', 'public');
+            $validatedData['link_picture'] = Storage::url($path);
         }
         $article->update($validatedData);
         $article->load('author'); // Eager load author information
@@ -274,7 +293,7 @@ class ArticlesController extends Controller
  *     @OA\Property(property="title", type="string", example="My New Article", description="Title of the article"),
  *     @OA\Property(property="category", type="string", example="Tutorials", description="Category of the article"),
  *     @OA\Property(property="content", type="string", example="This is the content of my new article.", description="Main content of the article"),
- *     @OA\Property(property="link_picture", type="string", format="url", nullable=true, example="http://example.com/new_article.png", description="URL to the article's main picture"),
+ *     @OA\Property(property="link_picture", type="string", format="binary", nullable=true, description="Image file for the article's main picture"),
  *     @OA\Property(property="status", type="string", enum={"draft", "published", "archived"}, example="draft", default="draft", description="Status of the article (draft, published, archived)")
  * )
  */

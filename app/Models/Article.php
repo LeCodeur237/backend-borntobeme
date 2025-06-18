@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany; // Add this line
 use OpenApi\Annotations as OA; // Required for OA annotations
 
 /**
@@ -93,5 +94,13 @@ class Article extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'iduser');
+    }
+
+    /**
+     * Get the comments for the article.
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class, 'article_id', 'idarticles');
     }
 }

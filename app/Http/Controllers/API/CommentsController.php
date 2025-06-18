@@ -89,19 +89,21 @@ class CommentsController extends Controller
         }
 
         $validatedData = $validator->validated();
+        $parentIdToStore = $validatedData['parent_id'] ?? null;
 
-        // If parent_id is provided, ensure it belongs to the same article
-        if (isset($validatedData['parent_id'])) {
-            $parentComment = Comment::find($validatedData['parent_id']);
+        // If a specific parent_id is provided (i.e., it's not null), validate it.
+        // The 'exists:comments,id' rule already ensures $validatedData['parent_id'] (if not null) is a valid comment ID.
+        // This check further ensures it belongs to the correct article.
+        if ($parentIdToStore !== null) {
+            $parentComment = Comment::find($parentIdToStore);
             if (!$parentComment || $parentComment->article_id !== $article->idarticles) {
                 return response()->json(['message' => 'Parent comment not found or does not belong to this article.'], 404);
             }
         }
-
         $comment = $article->comments()->create([
             'content' => $validatedData['content'],
             'user_id' => Auth::id(),
-            'parent_id' => $validatedData['parent_id'] ?? null,
+            'parent_id' => $parentIdToStore,
         ]);
 
         $comment->load('user', 'replies'); // Load user and any potential (though unlikely for new comment) replies

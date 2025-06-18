@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\CommentsController;
 use App\Http\Controllers\API\ArticlesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -44,8 +45,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/articles', [ArticlesController::class, 'store']);
     Route::put('/articles/{article}', [ArticlesController::class, 'update'])->where('article', '[0-9]+');
     Route::delete('/articles/{article}', [ArticlesController::class, 'destroy'])->where('article', '[0-9]+');
+
+    // Comment Management Routes (Create, Update, Delete require authentication)
+    // Comments are typically nested under articles for creation
+    Route::post('/articles/{article}/comments', [CommentsController::class, 'store'])->where('article', '[0-9]+');
+    Route::put('/comments/{comment}', [CommentsController::class, 'update'])->where('comment', '[0-9]+');
+    Route::delete('/comments/{comment}', [CommentsController::class, 'destroy'])->where('comment', '[0-9]+');
 });
 
 // Public Article Routes (Index, Show)
 Route::get('/articles', [ArticlesController::class, 'index']);
 Route::get('/articles/{article}', [ArticlesController::class, 'show'])->where('article', '[0-9]+');
+
+// Public Comment Routes (List comments for an article)
+Route::get('/articles/{article}/comments', [CommentsController::class, 'index'])->where('article', '[0-9]+');

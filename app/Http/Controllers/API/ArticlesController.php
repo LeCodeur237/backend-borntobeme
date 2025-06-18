@@ -112,7 +112,7 @@ class ArticlesController extends Controller
             $validatedData['link_picture'] = Storage::url($path);
         }else{
             $validatedData['link_picture'] = null;
-            return response()->json(['errors' => "link picture is empty"], 422);
+            return response()->json(['errors' => "link picture is empty"], 402);
         }
 
 

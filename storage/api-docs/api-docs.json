@@ -1128,6 +1128,296 @@
                 ]
             }
         },
+        "/articles/{article_id}/comments": {
+            "get": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Get comments for an article",
+                "description": "Returns a paginated list of comments for a specific article, including replies.",
+                "operationId": "getArticleComments",
+                "parameters": [
+                    {
+                        "name": "article_id",
+                        "in": "path",
+                        "description": "ID of the article",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Comment"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": "string",
+                                            "format": "url"
+                                        },
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string",
+                                            "format": "url"
+                                        },
+                                        "links": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "format": "url",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string",
+                                            "format": "url"
+                                        },
+                                        "per_page": {
+                                            "type": "integer"
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "format": "url",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Article not found"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Create a new comment or reply",
+                "description": "Creates a new comment on an article. Can also be a reply to an existing comment if parent_id is provided.",
+                "operationId": "storeComment",
+                "parameters": [
+                    {
+                        "name": "article_id",
+                        "in": "path",
+                        "description": "ID of the article to comment on",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Comment data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CommentInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Comment created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Comment"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Article or Parent Comment not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/comments/{comment_id}": {
+            "put": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Update an existing comment",
+                "description": "Updates an existing comment. Only the author or an admin can perform this action.",
+                "operationId": "updateComment",
+                "parameters": [
+                    {
+                        "name": "comment_id",
+                        "in": "path",
+                        "description": "ID of the comment to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Comment data to update",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "content"
+                                ],
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "example": "Updated comment content."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Comment updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Comment"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Not authorized to update this comment"
+                    },
+                    "404": {
+                        "description": "Comment not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Delete a comment",
+                "description": "Deletes an existing comment. Only the author or an admin can perform this action. Deleting a comment will also delete its replies if cascade is set.",
+                "operationId": "deleteComment",
+                "parameters": [
+                    {
+                        "name": "comment_id",
+                        "in": "path",
+                        "description": "ID of the comment to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Comment deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Comment deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Not authorized to delete this comment"
+                    },
+                    "404": {
+                        "description": "Comment not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/users": {
             "get": {
                 "tags": [
@@ -1725,6 +2015,100 @@
                 },
                 "type": "object"
             },
+            "Comment": {
+                "title": "Comment Model",
+                "description": "Represents a comment on an article, potentially as a reply to another comment.",
+                "required": [
+                    "id",
+                    "content",
+                    "user_id",
+                    "article_id"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Primary key ID of the comment",
+                        "type": "integer",
+                        "format": "int64",
+                        "readOnly": true,
+                        "example": 1
+                    },
+                    "content": {
+                        "description": "The content of the comment",
+                        "type": "string",
+                        "example": "Great article!"
+                    },
+                    "user_id": {
+                        "description": "UUID of the user who wrote the comment",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                    },
+                    "article_id": {
+                        "description": "ID of the article this comment belongs to",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 101
+                    },
+                    "parent_id": {
+                        "description": "ID of the parent comment if this is a reply",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Timestamp of comment creation",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-03-01T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp of last comment update",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-03-01T10:05:00Z"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/User"
+                    },
+                    "article": {
+                        "$ref": "#/components/schemas/Article"
+                    },
+                    "replies": {
+                        "description": "Replies to this comment",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Comment"
+                        },
+                        "readOnly": true,
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "CommentInput": {
+                "title": "Comment Input Data",
+                "description": "Data required to create or update a comment.",
+                "required": [
+                    "content"
+                ],
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "example": "This is my comment."
+                    },
+                    "parent_id": {
+                        "description": "ID of the parent comment if this is a reply. Omit or send null for a top-level comment.",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 10,
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "User": {
                 "title": "User Model",
                 "description": "User model representing an application user.",
@@ -1834,6 +2218,10 @@
         {
             "name": "Articles",
             "description": "Article management endpoints (CRUD operations for articles)"
+        },
+        {
+            "name": "Comments",
+            "description": "Comment management endpoints (CRUD operations for comments - to be implemented)"
         },
         {
             "name": "Books",

@@ -52,6 +52,16 @@
                         }
                     },
                     {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of articles per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
                         "name": "category",
                         "in": "query",
                         "description": "Filter by article category",

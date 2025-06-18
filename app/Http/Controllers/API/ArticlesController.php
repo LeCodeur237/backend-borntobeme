@@ -23,6 +23,7 @@ class ArticlesController extends Controller
      *      description="Returns a paginated list of articles. Can be filtered by status or category.",
      *      @OA\Parameter(name="page", in="query", description="Page number", required=false, @OA\Schema(type="integer")),
      *      @OA\Parameter(name="status", in="query", description="Filter by article status (draft, published, archived)", required=false, @OA\Schema(type="string", enum={"draft", "published", "archived"})),
+     *      @OA\Parameter(name="per_page", in="query", description="Number of articles per page", required=false, @OA\Schema(type="integer", default=15)),
      *      @OA\Parameter(name="category", in="query", description="Filter by article category", required=false, @OA\Schema(type="string")),
      *      @OA\Response(
      *          response=200,
@@ -48,6 +49,7 @@ class ArticlesController extends Controller
      */
     public function index(Request $request)
     {
+        $perPage = $request->input('per_page', 15); // Default to 15 if not provided
         $query = Article::with('author');
 
         if ($request->has('status')) {
@@ -58,7 +60,7 @@ class ArticlesController extends Controller
             $query->where('category', $request->input('category'));
         }
 
-        $articles = $query->orderBy('created_at', 'desc')->paginate(15);
+        $articles = $query->orderBy('created_at', 'desc')->paginate($perPage);
         return response()->json($articles);
     }
 

@@ -110,7 +110,11 @@ class ArticlesController extends Controller
         if ($request->hasFile('link_picture')) {
             $path = $request->file('link_picture')->store('articles', 'public');
             $validatedData['link_picture'] = Storage::url($path);
+        }else{
+            $validatedData['link_picture'] = null;
+            return response()->json(['errors' => "link picture is empty"], 422);
         }
+
 
         // If status is not provided, it will use the DB default 'draft'
         // or you can set it explicitly here if needed.

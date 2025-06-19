@@ -2436,15 +2436,18 @@
                         "nullable": true
                     },
                     "preferences": {
-                        "description": "User-defined preferences (e.g., theme, notifications)",
-                        "type": "object",
-                        "example": {
-                            "theme": "dark",
-                            "notifications": {
-                                "email": true,
-                                "sms": false
-                            }
+                        "description": "A list of user interests or preferences (e.g., hobbies, topics).",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
                         },
+                        "example": [
+                            "Book",
+                            "Read",
+                            "Sport",
+                            "Natation",
+                            "Travel"
+                        ],
                         "nullable": true
                     },
                     "created_at": {
@@ -2472,12 +2475,16 @@
                         "nullable": true
                     },
                     "preferences": {
-                        "description": "Key-value pairs for user preferences.",
-                        "type": "object",
-                        "example": {
-                            "ui_language": "en",
-                            "receive_newsletter": true
+                        "description": "A list of user interests or preferences.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
                         },
+                        "example": [
+                            "Photography",
+                            "Music",
+                            "Cooking"
+                        ],
                         "nullable": true
                     }
                 },

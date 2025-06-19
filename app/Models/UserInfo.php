@@ -19,10 +19,11 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="bio", type="string", nullable=true, description="A short biography of the user", example="Loves coding and hiking."),
  *     @OA\Property(
  *         property="preferences",
- *         type="object",
+ *         type="array",
+ *         @OA\Items(type="string"),
  *         nullable=true,
- *         description="User-defined preferences (e.g., theme, notifications)",
- *         example={"theme": "dark", "notifications": {"email": true, "sms": false}}
+ *         description="A list of user interests or preferences (e.g., hobbies, topics).",
+ *         example={"Book", "Read", "Sport", "Natation", "Travel"}
  *     ),
  *     @OA\Property(property="created_at", type="string", format="date-time", description="Timestamp of creation", readOnly=true),
  *     @OA\Property(property="updated_at", type="string", format="date-time", description="Timestamp of last update", readOnly=true)
@@ -36,10 +37,11 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="bio", type="string", nullable=true, example="Passionate about web development and open source."),
  *     @OA\Property(
  *         property="preferences",
- *         type="object",
+ *         type="array",
+ *         @OA\Items(type="string"),
  *         nullable=true,
- *         description="Key-value pairs for user preferences.",
- *         example={"ui_language": "en", "receive_newsletter": true}
+ *         description="A list of user interests or preferences.",
+ *         example={"Photography", "Music", "Cooking"}
  *     )
  * )
  */

@@ -106,7 +106,8 @@ class UserInfoController extends Controller
 
         $validator = Validator::make($request->all(), [
             'bio' => 'nullable|string|max:5000',
-            'preferences' => 'nullable|array', // Validate as array; specific preference keys can be validated further if needed
+            'preferences' => 'nullable|array',
+            'preferences.*' => 'sometimes|string|max:255', // Ensures each item in the array is a string
         ]);
 
         if ($validator->fails()) {

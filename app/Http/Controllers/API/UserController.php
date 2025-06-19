@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\UserInfo;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -94,7 +95,9 @@ class UserController extends Controller
      *              @OA\Property(property="linkphoto", type="string", format="url", nullable=true, example="http://example.com/new_photo.jpg"),
      *              @OA\Property(property="password", type="string", format="password", minLength=8, example="newSecurePassword123", description="Optional: Provide to change password"),
      *              @OA\Property(property="password_confirmation", type="string", format="password", minLength=8, example="newSecurePassword123", description="Required if password is provided"),
-     *              @OA\Property(property="role", type="string", enum={"user", "admin", "editor"}, example="user", description="Admin only: Can update user role")
+     *              @OA\Property(property="role", type="string", enum={"user", "admin", "editor"}, example="user", description="Admin only: Can update user role"),
+     *              @OA\Property(property="bio", type="string", nullable=true, example="An updated bio about myself."),
+     *              @OA\Property(property="preferences", type="array", @OA\Items(type="string"), nullable=true, example={"hiking", "reading_updated"})
      *          )
      *      ),
      *      @OA\Response(response=200, description="User updated successfully", @OA\JsonContent(ref="#/components/schemas/User")),
@@ -126,6 +129,10 @@ class UserController extends Controller
             'gender' => ['sometimes', 'required', 'string', Rule::in(['male', 'female', 'other'])],
             'linkphoto' => 'nullable|string|url|max:255',
             'password' => 'nullable|string|min:8|confirmed',
+            // UserInfo fields
+            'bio' => 'nullable|string|max:5000',
+            'preferences' => 'nullable|array',
+            'preferences.*' => 'sometimes|string|max:255', // Ensures each item in the array is a string
         ];
 
         // Only admin can change the role
@@ -144,16 +151,43 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $dataToUpdate = $validator->validated();
+        $validatedData = $validator->validated();
 
-        // Remove password from data if not provided to avoid hashing null
-        if (empty($dataToUpdate['password'])) {
-            unset($dataToUpdate['password']);
+        // Prepare data for User model update
+        $userDataToUpdate = [];
+        if (isset($validatedData['fullname'])) $userDataToUpdate['fullname'] = $validatedData['fullname'];
+        if (isset($validatedData['email'])) $userDataToUpdate['email'] = $validatedData['email'];
+        if (isset($validatedData['datebirthday'])) $userDataToUpdate['datebirthday'] = $validatedData['datebirthday'];
+        if (isset($validatedData['gender'])) $userDataToUpdate['gender'] = $validatedData['gender'];
+        if (array_key_exists('linkphoto', $validatedData)) $userDataToUpdate['linkphoto'] = $validatedData['linkphoto']; // Handle null linkphoto
+
+        if (!empty($validatedData['password'])) { // Only update password if provided
+            $userDataToUpdate['password'] = $validatedData['password']; // Hashing is handled by mutator in User model
+        }
+        // Role update logic
+        if ($authenticatedUser->role === 'admin' && isset($validatedData['role'])) {
+            $userDataToUpdate['role'] = $validatedData['role'];
         }
 
-        $targetUser->update($dataToUpdate);
+        if (!empty($userDataToUpdate)) {
+            $targetUser->update($userDataToUpdate);
+        }
 
-        return response()->json($targetUser);
+        // Prepare data for UserInfo model update
+        $userInfoDataToUpdate = [];
+        if (array_key_exists('bio', $validatedData)) {
+            $userInfoDataToUpdate['bio'] = $validatedData['bio'];
+        }
+        if (array_key_exists('preferences', $validatedData)) {
+            $userInfoDataToUpdate['preferences'] = $validatedData['preferences'];
+        }
+
+        // Update or create UserInfo if bio or preferences fields were part of the request
+        if (array_key_exists('bio', $validatedData) || array_key_exists('preferences', $validatedData)) {
+            UserInfo::updateOrCreate(['user_id' => $targetUser->iduser], $userInfoDataToUpdate);
+        }
+
+        return response()->json($targetUser->load('userInfo')); // Eager load userInfo for the response
     }
 
     /**

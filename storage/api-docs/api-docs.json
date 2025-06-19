@@ -1590,6 +1590,22 @@
                                             "editor"
                                         ],
                                         "example": "user"
+                                    },
+                                    "bio": {
+                                        "type": "string",
+                                        "example": "An updated bio about myself.",
+                                        "nullable": true
+                                    },
+                                    "preferences": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "hiking",
+                                            "reading_updated"
+                                        ],
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"

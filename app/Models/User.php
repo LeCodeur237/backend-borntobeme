@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Notifications\Notifiable;
@@ -28,7 +29,8 @@ use App\Notifications\CustomVerifyEmail;
  *     @OA\Property(property="role", type="string", enum={"user", "admin", "editor"}, description="User's role in the application", example="user"),
  *     @OA\Property(property="created_at", type="string", format="date-time", description="Timestamp of user creation", readOnly=true, example="2023-01-01T12:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", description="Timestamp of last user update", readOnly=true, example="2023-01-01T12:30:00Z"),
- *     @OA\Property(property="email_verified_at", type="string", format="date-time", nullable=true, description="Timestamp of email verification", readOnly=true, example="2023-01-01T12:05:00Z")
+ *     @OA\Property(property="email_verified_at", type="string", format="date-time", nullable=true, description="Timestamp of email verification", readOnly=true, example="2023-01-01T12:05:00Z"),
+ *     @OA\Property(property="user_info", ref="#/components/schemas/UserInfo", description="Additional user information", readOnly=true, nullable=true)
  * )
  */
 class User extends Authenticatable implements MustVerifyEmail
@@ -134,6 +136,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function books(): HasMany
     {
         return $this->hasMany(Book::class, 'user_id', 'iduser');
+    }
+
+    /**
+     * Get the additional information associated with the user.
+     */
+    public function userInfo(): HasOne
+    {
+        return $this->hasOne(UserInfo::class, 'user_id', 'iduser');
     }
 
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\CommentsController;
 use App\Http\Controllers\API\ArticlesController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\API\UserInfoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -40,6 +41,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user_id}', [UserController::class, 'show'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'); // UUID constraint
     Route::put('/users/{user_id}', [UserController::class, 'update'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
     Route::delete('/users/{user_id}', [UserController::class, 'destroy'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+
+        // User Info routes (using route model binding for User)
+    // The {user} parameter will automatically resolve to a User model instance
+    Route::get('/users/{user}/info', [UserInfoController::class, 'show']);
+    Route::match(['post', 'put'], '/users/{user}/info', [UserInfoController::class, 'storeOrUpdate']);
+
 
     // Article Management Routes (Create, Update, Delete require authentication)
     Route::post('/articles', [ArticlesController::class, 'store']);

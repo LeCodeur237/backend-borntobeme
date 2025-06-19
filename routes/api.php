@@ -38,9 +38,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User Management Routes (excluding create, as registration is handled by AuthController)
     Route::get('/users', [UserController::class, 'index']);
-    Route::get('/users/{user_id}', [UserController::class, 'show'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'); // UUID constraint
-    Route::put('/users/{user_id}', [UserController::class, 'update'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
-    Route::delete('/users/{user_id}', [UserController::class, 'destroy'])->where('user_id', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+    Route::get('/users/{user}', [UserController::class, 'show'])->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'); // UUID constraint
+    Route::put('/users/{user}', [UserController::class, 'update'])->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+
 
         // User Info routes (using route model binding for User)
     // The {user} parameter will automatically resolve to a User model instance

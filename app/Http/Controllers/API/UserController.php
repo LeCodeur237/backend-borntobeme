@@ -7,6 +7,7 @@ use App\Models\UserInfo;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -56,19 +57,15 @@ class UserController extends Controller
      *      @OA\Response(response=404, description="User not found")
      * )
      */
-    public function show(string $userId)
+    public function show(User $user) // Route model binding will automatically fetch the user or return 404
     {
-        $targetUser = User::find($userId);
-
-        if (!$targetUser) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
+        /** @var \App\Models\User $authenticatedUser */
         $authenticatedUser = Auth::user();
 
         // Admin can see any user, or user can see their own profile
-        if ($authenticatedUser->role === 'admin' || $authenticatedUser->iduser === $targetUser->iduser) {
-            return response()->json($targetUser);
+        // Note: $user is the $targetUser due to route model binding
+        if ($authenticatedUser->role === 'admin' || $authenticatedUser->iduser === $user->iduser) {
+            return response()->json($user->load('userInfo')); // Eager load userInfo
         }
 
         return response()->json(['message' => 'Forbidden. You do not have permission to view this profile.'], 403);
@@ -85,19 +82,22 @@ class UserController extends Controller
      *      @OA\Parameter(name="user_id", in="path", description="ID of user to update (UUID format)", required=true, @OA\Schema(type="string", format="uuid")),
      *      @OA\RequestBody(
      *          required=true,
-     *          description="User data to update",
-     *          @OA\JsonContent(
-     *              type="object",
-     *              @OA\Property(property="fullname", type="string", example="Jane Doe Updated"),
-     *              @OA\Property(property="email", type="string", format="email", example="jane.doe.updated@example.com"),
-     *              @OA\Property(property="datebirthday", type="string", format="date", example="1991-06-16"),
-     *              @OA\Property(property="gender", type="string", enum={"male", "female", "other"}, example="female"),
-     *              @OA\Property(property="linkphoto", type="string", format="url", nullable=true, example="http://example.com/new_photo.jpg"),
-     *              @OA\Property(property="password", type="string", format="password", minLength=8, example="newSecurePassword123", description="Optional: Provide to change password"),
-     *              @OA\Property(property="password_confirmation", type="string", format="password", minLength=8, example="newSecurePassword123", description="Required if password is provided"),
-     *              @OA\Property(property="role", type="string", enum={"user", "admin", "editor"}, example="user", description="Admin only: Can update user role"),
-     *              @OA\Property(property="bio", type="string", nullable=true, example="An updated bio about myself."),
-     *              @OA\Property(property="preferences", type="array", @OA\Items(type="string"), nullable=true, example={"hiking", "reading_updated"})
+     *          description="User data to update. Use 'multipart/form-data' when uploading a profile photo.",
+     *          @OA\MediaType(
+     *              mediaType="multipart/form-data",
+     *              @OA\Schema(
+     *                  type="object",
+     *                  @OA\Property(property="fullname", type="string", example="Jane Doe Updated", nullable=true, description="User's full name"),
+     *                  @OA\Property(property="email", type="string", format="email", example="jane.doe.updated@example.com", nullable=true, description="User's email address"),
+     *                  @OA\Property(property="datebirthday", type="string", format="date", example="1991-06-16", nullable=true, description="User's date of birth"),
+     *                  @OA\Property(property="gender", type="string", enum={"male", "female", "other"}, example="female", nullable=true, description="User's gender"),
+     *                  @OA\Property(property="linkphoto", type="string", format="binary", nullable=true, description="New profile photo file. Send null or omit to keep existing or remove if previously set to null."),
+     *                  @OA\Property(property="password", type="string", format="password", minLength=8, example="newSecurePassword123", description="Optional: Provide to change password", nullable=true),
+     *                  @OA\Property(property="password_confirmation", type="string", format="password", minLength=8, example="newSecurePassword123", description="Required if password is provided", nullable=true),
+     *                  @OA\Property(property="role", type="string", enum={"user", "admin", "editor"}, example="user", description="Admin only: Can update user role", nullable=true),
+     *                  @OA\Property(property="bio", type="string", nullable=true, example="An updated bio about myself."),
+     *                  @OA\Property(property="preferences", type="array", @OA\Items(type="string"), nullable=true, example={"hiking", "reading_updated"})
+     *              )
      *          )
      *      ),
      *      @OA\Response(response=200, description="User updated successfully", @OA\JsonContent(ref="#/components/schemas/User")),
@@ -107,27 +107,22 @@ class UserController extends Controller
      *      @OA\Response(response=422, description="Validation Error", @OA\JsonContent(ref="#/components/schemas/ValidationError"))
      * )
      */
-    public function update(Request $request, string $userId)
+    public function update(Request $request, User $user) // Route model binding for $user
     {
-        $targetUser = User::find($userId);
-
-        if (!$targetUser) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
+        /** @var \App\Models\User $authenticatedUser */
         $authenticatedUser = Auth::user();
 
         // Authorization: Admin can update any user, or user can update their own profile
-        if (!($authenticatedUser->role === 'admin' || $authenticatedUser->iduser === $targetUser->iduser)) {
+        if (!($authenticatedUser->role === 'admin' || $authenticatedUser->iduser === $user->iduser)) {
             return response()->json(['message' => 'Forbidden. You do not have permission to update this profile.'], 403);
         }
 
         $rules = [
             'fullname' => 'sometimes|required|string|max:255',
-            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($targetUser->iduser, 'iduser')],
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->iduser, 'iduser')],
             'datebirthday' => 'sometimes|required|date',
             'gender' => ['sometimes', 'required', 'string', Rule::in(['male', 'female', 'other'])],
-            'linkphoto' => 'nullable|string|url|max:255',
+            'linkphoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Updated for image upload
             'password' => 'nullable|string|min:8|confirmed',
             // UserInfo fields
             'bio' => 'nullable|string|max:5000',
@@ -140,7 +135,7 @@ class UserController extends Controller
             $rules['role'] = ['sometimes', 'required', 'string', Rule::in(['user', 'admin', 'editor'])];
         } else {
             // If a non-admin tries to update role, it will be ignored (or you can explicitly forbid it)
-            if ($request->has('role') && $request->input('role') !== $targetUser->role) {
+            if ($request->has('role') && $request->input('role') !== $user->role) {
                  return response()->json(['message' => 'Forbidden. You cannot change your own role.'], 403);
             }
         }
@@ -154,12 +149,40 @@ class UserController extends Controller
         $validatedData = $validator->validated();
 
         // Prepare data for User model update
+        // Explicitly list fields to prevent mass assignment issues with file objects
         $userDataToUpdate = [];
-        if (isset($validatedData['fullname'])) $userDataToUpdate['fullname'] = $validatedData['fullname'];
-        if (isset($validatedData['email'])) $userDataToUpdate['email'] = $validatedData['email'];
-        if (isset($validatedData['datebirthday'])) $userDataToUpdate['datebirthday'] = $validatedData['datebirthday'];
-        if (isset($validatedData['gender'])) $userDataToUpdate['gender'] = $validatedData['gender'];
-        if (array_key_exists('linkphoto', $validatedData)) $userDataToUpdate['linkphoto'] = $validatedData['linkphoto']; // Handle null linkphoto
+        $userModelFields = ['fullname', 'email', 'datebirthday', 'gender'];
+        foreach ($userModelFields as $field) {
+            if (array_key_exists($field, $validatedData)) {
+                $userDataToUpdate[$field] = $validatedData[$field];
+            }
+        }
+
+        // Handle linkphoto (file upload or explicit null for removal)
+        if ($request->hasFile('linkphoto')) {
+            if ($user->linkphoto) { // Check if there's an old photo
+                $basePublicUrl = rtrim(Storage::disk('public')->url(''), '/');
+                if (str_starts_with($user->linkphoto, $basePublicUrl . '/')) {
+                    $oldRelativePath = substr($user->linkphoto, strlen($basePublicUrl) + 1);
+                    Storage::disk('public')->delete($oldRelativePath);
+                }
+            }
+            $filePath = $request->file('linkphoto')->store('profil', 'public'); // Store in 'storage/app/public/profil'
+            $userDataToUpdate['linkphoto'] = Storage::disk('public')->url($filePath); // Get public URL
+        } elseif (array_key_exists('linkphoto', $validatedData) && is_null($validatedData['linkphoto'])) {
+            // This case handles if linkphoto is explicitly sent as null (e.g., to remove it).
+            // $validatedData['linkphoto'] would be null here if 'nullable|image' passed with a null input.
+            if ($user->linkphoto) {
+                $basePublicUrl = rtrim(Storage::disk('public')->url(''), '/');
+                if (str_starts_with($user->linkphoto, $basePublicUrl . '/')) {
+                    $oldRelativePath = substr($user->linkphoto, strlen($basePublicUrl) + 1);
+                    Storage::disk('public')->delete($oldRelativePath);
+                }
+            }
+            $userDataToUpdate['linkphoto'] = null;
+        }
+        // If 'linkphoto' was not sent in the request at all, it won't be in $userDataToUpdate,
+        // and the existing photo will remain unchanged.
 
         if (!empty($validatedData['password'])) { // Only update password if provided
             $userDataToUpdate['password'] = $validatedData['password']; // Hashing is handled by mutator in User model
@@ -170,7 +193,7 @@ class UserController extends Controller
         }
 
         if (!empty($userDataToUpdate)) {
-            $targetUser->update($userDataToUpdate);
+            $user->update($userDataToUpdate);
         }
 
         // Prepare data for UserInfo model update
@@ -184,10 +207,10 @@ class UserController extends Controller
 
         // Update or create UserInfo if bio or preferences fields were part of the request
         if (array_key_exists('bio', $validatedData) || array_key_exists('preferences', $validatedData)) {
-            UserInfo::updateOrCreate(['user_id' => $targetUser->iduser], $userInfoDataToUpdate);
+            UserInfo::updateOrCreate(['user_id' => $user->iduser], $userInfoDataToUpdate);
         }
 
-        return response()->json($targetUser->load('userInfo')); // Eager load userInfo for the response
+        return response()->json($user->load('userInfo')); // Eager load userInfo for the response
     }
 
     /**
@@ -205,28 +228,26 @@ class UserController extends Controller
      *      @OA\Response(response=404, description="User not found")
      * )
      */
-    public function destroy(string $userId)
+    public function destroy(User $user) // Route model binding for $user
     {
+        /** @var \App\Models\User $authenticatedUser */
         $authenticatedUser = Auth::user();
 
         if ($authenticatedUser->role !== 'admin') {
             return response()->json(['message' => 'Forbidden. Admin access required.'], 403);
         }
 
-        $targetUser = User::find($userId);
-
-        if (!$targetUser) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
+        // $user is the $targetUser due to route model binding.
+        // Laravel returns 404 automatically if user not found by {user} in route.
 
         // Prevent admin from deleting themselves through this endpoint for safety
         // They can be deleted via direct database manipulation or a dedicated super-admin tool if needed.
-        if ($authenticatedUser->iduser === $targetUser->iduser) {
+        if ($authenticatedUser->iduser === $user->iduser) {
             return response()->json(['message' => 'Forbidden. You cannot delete your own account through this endpoint.'], 403);
         }
 
-        $targetUser->tokens()->delete(); // Invalidate all tokens for the user being deleted
-        $targetUser->delete();
+        $user->tokens()->delete(); // Invalidate all tokens for the user being deleted
+        $user->delete();
 
         return response()->json(['message' => 'User deleted successfully']);
     }

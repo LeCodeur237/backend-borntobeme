@@ -37,13 +37,33 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/resend-verification', [AuthController::class, 'resendEmailVerification'])->name('verification.send');
 
     // User Management Routes (excluding create, as registration is handled by AuthController)
-    Route::get('/users', [UserController::class, 'index']);
-    Route::get('/users/{user}', [UserController::class, 'show'])->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'); // UUID constraint
-    Route::put('/users/{user}', [UserController::class, 'update'])->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+    Route::prefix('users')->group(function () {
 
+        // Get all users (Admin only)
+        Route::get('/', [UserController::class, 'index']);
+
+        // Get specific user
+        Route::get('/{user}', [UserController::class, 'show'])
+            ->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+
+        // 🆕 NEW: Update user profile (fullname, gender, birthday, bio, preferences only)
+        Route::put('/{user}/profile', [UserController::class, 'updateProfile'])
+            ->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+
+        // 🆕 NEW: Change user password
+        Route::put('/{user}/password', [UserController::class, 'changePassword'])
+            ->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+
+        // Delete user (Admin only)
+        Route::delete('/{user}', [UserController::class, 'destroy'])
+            ->where('user', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
 
         // User Info routes (using route model binding for User)
+        Route::get('/{user}/info', [UserInfoController::class, 'show']);
+        Route::match(['post', 'put'], '/{user}/info', [UserInfoController::class, 'storeOrUpdate']);
+    });
+
+    // User Info routes (using route model binding for User)
     // The {user} parameter will automatically resolve to a User model instance
     Route::get('/users/{user}/info', [UserInfoController::class, 'show']);
     Route::match(['post', 'put'], '/users/{user}/info', [UserInfoController::class, 'storeOrUpdate']);

@@ -1,16 +1,19 @@
 <?php
 
+// ============================================
+// UserController.php - Version mise à jour
+// ============================================
+
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateUserProfileRequest;
+use App\Http\Requests\ChangePasswordRequest;
 use App\Models\UserInfo;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use OpenApi\Annotations as OA;
 
 class UserController extends Controller
@@ -57,15 +60,13 @@ class UserController extends Controller
      *      @OA\Response(response=404, description="User not found")
      * )
      */
-    public function show(User $user) // Route model binding will automatically fetch the user or return 404
+    public function show(User $user)
     {
         /** @var \App\Models\User $authenticatedUser */
         $authenticatedUser = Auth::user();
 
-        // Admin can see any user, or user can see their own profile
-        // Note: $user is the $targetUser due to route model binding
         if ($authenticatedUser->role === 'admin' || $authenticatedUser->iduser === $user->iduser) {
-            return response()->json($user->load('userInfo')); // Eager load userInfo
+            return response()->json($user->load('userInfo'));
         }
 
         return response()->json(['message' => 'Forbidden. You do not have permission to view this profile.'], 403);
@@ -73,110 +74,54 @@ class UserController extends Controller
 
     /**
      * @OA\Put(
-     *      path="/users/{user_id}",
-     *      operationId="updateUser",
+     *      path="/users/{user_id}/profile",
+     *      operationId="updateUserProfile",
      *      tags={"Users"},
      *      summary="Update user profile information",
-     *      description="Updates user's fullname, birthday, gender, profile photo, bio, and preferences. Admins can update any user. Regular users can only update their own profile.",
+     *      description="Updates user's fullname, birthday, gender, bio, and preferences only. Admins can update any user. Regular users can only update their own profile.",
      *      security={{"bearerAuth":{}}},
      *      @OA\Parameter(name="user_id", in="path", description="ID of user to update (UUID format)", required=true, @OA\Schema(type="string", format="uuid")),
      *      @OA\RequestBody(
-     *          required=true,
-     *          description="User data to update. Use 'multipart/form-data' when uploading a profile photo.",
+     *          required=false,
+     *          description="User profile data to update",
      *          @OA\MediaType(
+     *              mediaType="application/json",
      *              @OA\Schema(
      *                  type="object",
      *                  @OA\Property(property="fullname", type="string", example="Jane Doe Updated", nullable=true, description="User's full name"),
-     *                  @OA\Property(property="email", type="string", format="email", example="jane.doe.updated@example.com", nullable=true, description="User's email address"),
      *                  @OA\Property(property="datebirthday", type="string", format="date", example="1991-06-16", nullable=true, description="User's date of birth"),
      *                  @OA\Property(property="gender", type="string", enum={"male", "female", "other"}, example="female", nullable=true, description="User's gender"),
-     *                  @OA\Property(property="linkphoto", type="string", format="binary", nullable=true, description="New profile photo file. Send null or omit to keep existing or remove if previously set to null."),
-     *                  @OA\Property(property="bio", type="string", nullable=true, example="An updated bio about myself."),
-     *                  @OA\Property(property="preferences", type="array", @OA\Items(type="string"), nullable=true, example={"hiking", "reading_updated"})
-     *              ),
-     *              mediaType="multipart/form-data"
+     *                  @OA\Property(property="bio", type="string", nullable=true, example="An updated bio about myself.", description="User's biography"),
+     *                  @OA\Property(property="preferences", type="array", @OA\Items(type="string"), nullable=true, example={"hiking", "reading"}, description="User's preferences")
+     *              )
      *          )
      *      ),
-     *      @OA\Response(response=200, description="User updated successfully", @OA\JsonContent(ref="#/components/schemas/User")),
+     *      @OA\Response(response=200, description="Profile updated successfully", @OA\JsonContent(ref="#/components/schemas/User")),
      *      @OA\Response(response=401, description="Unauthenticated"),
-     *      @OA\Response(response=403, description="Forbidden - Cannot update this user's profile/role"),
+     *      @OA\Response(response=403, description="Forbidden - Cannot update this user's profile"),
      *      @OA\Response(response=404, description="User not found"),
      *      @OA\Response(response=422, description="Validation Error", @OA\JsonContent(ref="#/components/schemas/ValidationError"))
      * )
      */
-    public function update(Request $request, User $user) // Route model binding for $user
+    public function updateProfile(UpdateUserProfileRequest $request, User $user)
     {
-        /** @var \App\Models\User $authenticatedUser */
-        $authenticatedUser = Auth::user();
+        $validatedData = $request->validated();
 
-        // Authorization: Admin can update any user, or user can update their own profile
-        if (!($authenticatedUser->role === 'admin' || $authenticatedUser->iduser === $user->iduser)) {
-            return response()->json(['message' => 'Forbidden. You do not have permission to update this profile.'], 403);
-        }
-
-        $rules = [
-            'fullname' => 'sometimes|string|max:255',
-            // Email updates are not part of this request based on the new requirements.
-            // If email update is needed, it should be explicitly added back or handled in a separate endpoint.
-            // 'email' => ['sometimes', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->iduser, 'iduser')],
-            'datebirthday' => 'sometimes|date',
-            'gender' => ['sometimes', 'string', Rule::in(['male', 'female', 'other'])],
-            'linkphoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Updated for image upload
-            // UserInfo fields
-            'bio' => 'nullable|string|max:5000',
-            'preferences' => 'nullable|array',
-            'preferences.*' => 'sometimes|string|max:255', // Ensures each item in the array is a string
-        ];
-
-        $validator = Validator::make($request->all(), $rules);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $validatedData = $validator->validated();
-
-        // Prepare data for User model update
-        // Explicitly list fields to prevent mass assignment issues with file objects
+        // Update User model fields
         $userDataToUpdate = [];
-        $userModelFields = ['fullname', 'datebirthday', 'gender']; // Removed 'email'
+        $userModelFields = ['fullname', 'datebirthday', 'gender'];
+
         foreach ($userModelFields as $field) {
             if (array_key_exists($field, $validatedData)) {
                 $userDataToUpdate[$field] = $validatedData[$field];
             }
         }
 
-        // Handle linkphoto (file upload or explicit null for removal)
-        if ($request->hasFile('linkphoto')) {
-            if ($user->linkphoto) { // Check if there's an old photo
-                $basePublicUrl = rtrim(Storage::disk('public')->url(''), '/');
-                if (str_starts_with($user->linkphoto, $basePublicUrl . '/')) {
-                    $oldRelativePath = substr($user->linkphoto, strlen($basePublicUrl) + 1);
-                    Storage::disk('public')->delete($oldRelativePath);
-                }
-            }
-            $filePath = $request->file('linkphoto')->store('profil', 'public'); // Store in 'storage/app/public/profil'
-            $userDataToUpdate['linkphoto'] = Storage::disk('public')->url($filePath); // Get public URL
-        } elseif (array_key_exists('linkphoto', $validatedData) && is_null($validatedData['linkphoto'])) {
-            // This case handles if linkphoto is explicitly sent as null (e.g., to remove it).
-            // $validatedData['linkphoto'] would be null here if 'nullable|image' passed with a null input.
-            if ($user->linkphoto) {
-                $basePublicUrl = rtrim(Storage::disk('public')->url(''), '/');
-                if (str_starts_with($user->linkphoto, $basePublicUrl . '/')) {
-                    $oldRelativePath = substr($user->linkphoto, strlen($basePublicUrl) + 1);
-                    Storage::disk('public')->delete($oldRelativePath);
-                }
-            }
-            $userDataToUpdate['linkphoto'] = null;
-        }
-        // If 'linkphoto' was not sent in the request at all, it won't be in $userDataToUpdate,
-        // and the existing photo will remain unchanged.
-
         if (!empty($userDataToUpdate)) {
             $user->update($userDataToUpdate);
         }
 
-        // Prepare data for UserInfo model update
+        // Update UserInfo model fields
         $userInfoDataToUpdate = [];
         if (array_key_exists('bio', $validatedData)) {
             $userInfoDataToUpdate['bio'] = $validatedData['bio'];
@@ -185,12 +130,61 @@ class UserController extends Controller
             $userInfoDataToUpdate['preferences'] = $validatedData['preferences'];
         }
 
-        // Update or create UserInfo if bio or preferences fields were part of the request
-        if (array_key_exists('bio', $validatedData) || array_key_exists('preferences', $validatedData)) {
+        if (!empty($userInfoDataToUpdate)) {
             UserInfo::updateOrCreate(['user_id' => $user->iduser], $userInfoDataToUpdate);
         }
 
-        return response()->json($user->load('userInfo')); // Eager load userInfo for the response
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user->load('userInfo')
+        ]);
+    }
+
+    /**
+     * @OA\Put(
+     *      path="/users/{user_id}/password",
+     *      operationId="changeUserPassword",
+     *      tags={"Users"},
+     *      summary="Change user password",
+     *      description="Changes user password. Admins can change any user's password without current password. Regular users must provide current password and can only change their own.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(name="user_id", in="path", description="ID of user to update password (UUID format)", required=true, @OA\Schema(type="string", format="uuid")),
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="Password change data",
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+     *                  type="object",
+     *                  required={"new_password", "new_password_confirmation"},
+     *                  @OA\Property(property="current_password", type="string", format="password", example="currentpassword123", description="Current password (required for non-admin users)"),
+     *                  @OA\Property(property="new_password", type="string", format="password", example="newpassword123", description="New password (min 8 characters)"),
+     *                  @OA\Property(property="new_password_confirmation", type="string", format="password", example="newpassword123", description="New password confirmation")
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(response=200, description="Password changed successfully", @OA\JsonContent(@OA\Property(property="message", type="string", example="Password changed successfully"))),
+     *      @OA\Response(response=401, description="Unauthenticated"),
+     *      @OA\Response(response=403, description="Forbidden - Cannot change this user's password"),
+     *      @OA\Response(response=404, description="User not found"),
+     *      @OA\Response(response=422, description="Validation Error", @OA\JsonContent(ref="#/components/schemas/ValidationError"))
+     * )
+     */
+    public function changePassword(ChangePasswordRequest $request, User $user)
+    {
+        $validatedData = $request->validated();
+
+        // Update password
+        $user->update([
+            'password' => Hash::make($validatedData['new_password'])
+        ]);
+
+        // Invalidate all existing tokens for security
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Password changed successfully. Please login again with your new password.'
+        ]);
     }
 
     /**
@@ -208,7 +202,7 @@ class UserController extends Controller
      *      @OA\Response(response=404, description="User not found")
      * )
      */
-    public function destroy(User $user) // Route model binding for $user
+    public function destroy(User $user)
     {
         /** @var \App\Models\User $authenticatedUser */
         $authenticatedUser = Auth::user();
@@ -217,18 +211,157 @@ class UserController extends Controller
             return response()->json(['message' => 'Forbidden. Admin access required.'], 403);
         }
 
-        // $user is the $targetUser due to route model binding.
-        // Laravel returns 404 automatically if user not found by {user} in route.
-
-        // Prevent admin from deleting themselves through this endpoint for safety
-        // They can be deleted via direct database manipulation or a dedicated super-admin tool if needed.
         if ($authenticatedUser->iduser === $user->iduser) {
             return response()->json(['message' => 'Forbidden. You cannot delete your own account through this endpoint.'], 403);
         }
 
-        $user->tokens()->delete(); // Invalidate all tokens for the user being deleted
+        $user->tokens()->delete();
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully']);
+    }
+}
+
+// ============================================
+// UpdateUserProfileRequest.php
+// ============================================
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+
+class UpdateUserProfileRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        $user = $this->route('user'); // Get user from route model binding
+        $authenticatedUser = Auth::user();
+
+        // Admin can update any user, or user can update their own profile
+        return $authenticatedUser->role === 'admin' || $authenticatedUser->iduser === $user->iduser;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     */
+    public function rules(): array
+    {
+        return [
+            'fullname' => 'sometimes|string|max:255',
+            'datebirthday' => 'sometimes|date|before:today',
+            'gender' => 'sometimes|in:male,female,other',
+            'bio' => 'sometimes|nullable|string|max:1000',
+            'preferences' => 'sometimes|nullable|array',
+            'preferences.*' => 'string|max:100',
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'fullname.string' => 'Le nom complet doit être une chaîne de caractères.',
+            'fullname.max' => 'Le nom complet ne peut pas dépasser 255 caractères.',
+            'datebirthday.date' => 'La date de naissance doit être une date valide.',
+            'datebirthday.before' => 'La date de naissance doit être antérieure à aujourd\'hui.',
+            'gender.in' => 'Le genre doit être: male, female ou other.',
+            'bio.string' => 'La biographie doit être une chaîne de caractères.',
+            'bio.max' => 'La biographie ne peut pas dépasser 1000 caractères.',
+            'preferences.array' => 'Les préférences doivent être un tableau.',
+            'preferences.*.string' => 'Chaque préférence doit être une chaîne de caractères.',
+            'preferences.*.max' => 'Chaque préférence ne peut pas dépasser 100 caractères.',
+        ];
+    }
+}
+
+// ============================================
+// ChangePasswordRequest.php
+// ============================================
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+
+class ChangePasswordRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        $user = $this->route('user'); // Get user from route model binding
+        $authenticatedUser = Auth::user();
+
+        // Admin can change any user's password, or user can change their own password
+        return $authenticatedUser->role === 'admin' || $authenticatedUser->iduser === $user->iduser;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     */
+    public function rules(): array
+    {
+        $user = $this->route('user');
+        $authenticatedUser = Auth::user();
+
+        $rules = [
+            'new_password' => 'required|string|min:8|confirmed',
+            'new_password_confirmation' => 'required|string',
+        ];
+
+        // If user is not admin and trying to change their own password, require current password
+        if ($authenticatedUser->role !== 'admin' && $authenticatedUser->iduser === $user->iduser) {
+            $rules['current_password'] = 'required|string';
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $user = $this->route('user');
+            $authenticatedUser = Auth::user();
+
+            // If not admin and changing own password, verify current password
+            if ($authenticatedUser->role !== 'admin' &&
+                $authenticatedUser->iduser === $user->iduser &&
+                $this->filled('current_password')) {
+
+                if (!Hash::check($this->current_password, $user->password)) {
+                    $validator->errors()->add('current_password', 'Le mot de passe actuel est incorrect.');
+                }
+            }
+
+            // Ensure new password is different from current password
+            if ($this->filled('new_password') && Hash::check($this->new_password, $user->password)) {
+                $validator->errors()->add('new_password', 'Le nouveau mot de passe doit être différent du mot de passe actuel.');
+            }
+        });
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'current_password.required' => 'Le mot de passe actuel est requis.',
+            'new_password.required' => 'Le nouveau mot de passe est requis.',
+            'new_password.min' => 'Le nouveau mot de passe doit contenir au moins 8 caractères.',
+            'new_password.confirmed' => 'La confirmation du nouveau mot de passe ne correspond pas.',
+            'new_password_confirmation.required' => 'La confirmation du nouveau mot de passe est requise.',
+        ];
     }
 }

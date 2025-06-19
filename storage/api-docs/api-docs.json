@@ -1512,128 +1512,6 @@
                     }
                 ]
             },
-            "put": {
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Update user profile information",
-                "description": "Updates user's fullname, birthday, gender, profile photo, bio, and preferences. Admins can update any user. Regular users can only update their own profile.",
-                "operationId": "updateUser",
-                "parameters": [
-                    {
-                        "name": "user_id",
-                        "in": "path",
-                        "description": "ID of user to update (UUID format)",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "description": "User data to update. Use 'multipart/form-data' when uploading a profile photo.",
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "properties": {
-                                    "fullname": {
-                                        "description": "User's full name",
-                                        "type": "string",
-                                        "example": "Jane Doe Updated",
-                                        "nullable": true
-                                    },
-                                    "email": {
-                                        "description": "User's email address",
-                                        "type": "string",
-                                        "format": "email",
-                                        "example": "jane.doe.updated@example.com",
-                                        "nullable": true
-                                    },
-                                    "datebirthday": {
-                                        "description": "User's date of birth",
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "1991-06-16",
-                                        "nullable": true
-                                    },
-                                    "gender": {
-                                        "description": "User's gender",
-                                        "type": "string",
-                                        "enum": [
-                                            "male",
-                                            "female",
-                                            "other"
-                                        ],
-                                        "example": "female",
-                                        "nullable": true
-                                    },
-                                    "linkphoto": {
-                                        "description": "New profile photo file. Send null or omit to keep existing or remove if previously set to null.",
-                                        "type": "string",
-                                        "format": "binary",
-                                        "nullable": true
-                                    },
-                                    "bio": {
-                                        "type": "string",
-                                        "example": "An updated bio about myself.",
-                                        "nullable": true
-                                    },
-                                    "preferences": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        },
-                                        "example": [
-                                            "hiking",
-                                            "reading_updated"
-                                        ],
-                                        "nullable": true
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "User updated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/User"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden - Cannot update this user's profile/role"
-                    },
-                    "404": {
-                        "description": "User not found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
             "delete": {
                 "tags": [
                     "Users"
@@ -1678,6 +1556,218 @@
                     },
                     "404": {
                         "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/{user_id}/profile": {
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update user profile information",
+                "description": "Updates user's fullname, birthday, gender, bio, and preferences only. Admins can update any user. Regular users can only update their own profile.",
+                "operationId": "updateUserProfile",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "ID of user to update (UUID format)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "User profile data to update",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "fullname": {
+                                        "description": "User's full name",
+                                        "type": "string",
+                                        "example": "Jane Doe Updated",
+                                        "nullable": true
+                                    },
+                                    "datebirthday": {
+                                        "description": "User's date of birth",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1991-06-16",
+                                        "nullable": true
+                                    },
+                                    "gender": {
+                                        "description": "User's gender",
+                                        "type": "string",
+                                        "enum": [
+                                            "male",
+                                            "female",
+                                            "other"
+                                        ],
+                                        "example": "female",
+                                        "nullable": true
+                                    },
+                                    "bio": {
+                                        "description": "User's biography",
+                                        "type": "string",
+                                        "example": "An updated bio about myself.",
+                                        "nullable": true
+                                    },
+                                    "preferences": {
+                                        "description": "User's preferences",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "hiking",
+                                            "reading"
+                                        ],
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Cannot update this user's profile"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/{user_id}/password": {
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Change user password",
+                "description": "Changes user password. Admins can change any user's password without current password. Regular users must provide current password and can only change their own.",
+                "operationId": "changeUserPassword",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "ID of user to update password (UUID format)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Password change data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "new_password",
+                                    "new_password_confirmation"
+                                ],
+                                "properties": {
+                                    "current_password": {
+                                        "description": "Current password (required for non-admin users)",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "currentpassword123"
+                                    },
+                                    "new_password": {
+                                        "description": "New password (min 8 characters)",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newpassword123"
+                                    },
+                                    "new_password_confirmation": {
+                                        "description": "New password confirmation",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newpassword123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password changed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Password changed successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Cannot change this user's password"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [

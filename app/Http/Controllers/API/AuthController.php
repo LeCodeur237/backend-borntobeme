@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ForgotPasswordRequest; // 🆕 NEW
+use App\Http\Requests\ResetPasswordRequest;   // 🆕 NEW
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Password; // 🆕 NEW: For password broker
 use OpenApi\Annotations as OA; // Required for OA annotations
 use Illuminate\Auth\Events\Verified;
 
@@ -271,5 +274,99 @@ class AuthController extends Controller
         }
 
         return response()->json(['message' => 'Email address successfully verified.']);
+    }
+
+    /**
+     * @OA\Post(
+     *      path="/forgot-password",
+     *      operationId="sendPasswordResetLink",
+     *      tags={"Authentication"},
+     *      summary="Send password reset link",
+     *      description="Sends a password reset link to the user's email address if the email exists in the system.",
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="User's email to send reset link",
+     *          @OA\JsonContent(
+     *              required={"email"},
+     *              @OA\Property(property="email", type="string", format="email", example="user@example.com")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Password reset link sent successfully (if email exists).",
+     *          @OA\JsonContent(@OA\Property(property="message", type="string", example="Password reset link sent. Please check your email."))
+     *      ),
+     *      @OA\Response(response=422, description="Validation Error", @OA\JsonContent(ref="#/components/schemas/ValidationError")),
+     *      @OA\Response(response=404, description="User not found (though typically a generic success message is returned for security).")
+     * )
+     */
+    public function forgotPassword(ForgotPasswordRequest $request)
+    {
+        $validatedData = $request->validated();
+
+        // Use Laravel's built-in password broker to send the reset link
+        $status = Password::sendResetLink($validatedData);
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json(['message' => Password::RESET_LINK_SENT]);
+        }
+
+        // If the status is INVALID_USER, it means the email was not found.
+        // For security, you might still want to return a generic success message.
+        // However, returning the actual status can be helpful for debugging or specific frontend handling.
+        // Let's return the status directly for now.
+        // If $status is Password::RESET_THROTTLED, it means the user requested too many resets recently.
+        return response()->json(['message' => $status], $status === Password::INVALID_USER ? 404 : 422);
+    }
+
+    /**
+     * @OA\Post(
+     *      path="/reset-password",
+     *      operationId="resetUserPassword",
+     *      tags={"Authentication"},
+     *      summary="Reset user's password",
+     *      description="Resets the user's password using the token from the password reset link.",
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="Password reset data",
+     *          @OA\JsonContent(
+     *              required={"token", "email", "password", "password_confirmation"},
+     *              @OA\Property(property="token", type="string", example="verylongresettokenstring", description="The password reset token from the email link."),
+     *              @OA\Property(property="email", type="string", format="email", example="user@example.com", description="User's email address."),
+     *              @OA\Property(property="password", type="string", format="password", minLength=8, example="newSecurePassword123", description="New password."),
+     *              @OA\Property(property="password_confirmation", type="string", format="password", minLength=8, example="newSecurePassword123", description="Confirmation of the new password.")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Password reset successfully.",
+     *          @OA\JsonContent(@OA\Property(property="message", type="string", example="Password has been reset successfully."))
+     *      ),
+     *      @OA\Response(response=422, description="Validation Error or Invalid Token/Email", @OA\JsonContent(ref="#/components/schemas/ValidationError")),
+     *      @OA\Response(response=400, description="Invalid token or email.", @OA\JsonContent(@OA\Property(property="message", type="string")))
+     * )
+     */
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        $validatedData = $request->validated();
+
+        // Use Laravel's built-in password broker to reset the password
+        $status = Password::reset(
+            $validatedData, // This includes email, password, password_confirmation, token
+            function (User $user, string $password) {
+                $user->password = $password; // Hashing is handled by the User model's mutator
+                $user->save();
+                // Optionally, you can dispatch an event here: event(new PasswordReset($user));
+                // And invalidate all tokens for security
+                $user->tokens()->delete();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json(['message' => $status]);
+        }
+
+        // Handle errors like invalid token or user
+        return response()->json(['message' => $status], 400);
     }
 }

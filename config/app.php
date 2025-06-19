@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'BORNTOBEME'),
 
     /*
     |--------------------------------------------------------------------------
@@ -57,6 +57,17 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     'asset_url' => env('ASSET_URL', null),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used to generate links to your frontend application,
+    | for example, in password reset emails.
+    |
+    */
+    'frontend_url' => env('FRONTEND_URL', 'https://born-to-be-me.com'), // Default if not in .env
 
     /*
     |--------------------------------------------------------------------------

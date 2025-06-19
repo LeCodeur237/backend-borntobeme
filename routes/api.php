@@ -26,6 +26,10 @@ Route::post('/register', [AuthController::class, 'register'])->name('register');
 Route::post('/contact', [ContactController::class, 'send']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
+// Password Reset Routes
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email'); // Matches Laravel's naming convention
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update'); // Matches Laravel's naming convention
+
 
 // Email Verification Route (must be publicly accessible but signed)
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])

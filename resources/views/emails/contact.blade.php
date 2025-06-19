@@ -14,5 +14,5 @@ You have received a new message from your contact form.
 {{ $formData['message'] }}
 
 Thanks,
-{{ config('app.name') }}
+{{ $formData['name'] }}
 </x-mail::message>

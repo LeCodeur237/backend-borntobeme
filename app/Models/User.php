@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Auth\Passwords\CanResetPassword; // 🆕 NEW: Import the trait
 use App\Notifications\CustomVerifyEmail;
 
 /**
@@ -35,7 +36,7 @@ use App\Notifications\CustomVerifyEmail;
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable, HasUuids;
+    use HasApiTokens, HasFactory, Notifiable, HasUuids, CanResetPassword; // 🆕 NEW: Add CanResetPassword trait
     /**
      * The table associated with the model.
      *
@@ -156,5 +157,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendEmailVerificationNotification()
     {
         $this->notify(new CustomVerifyEmail); // Use your custom notification
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\CustomResetPasswordNotification($token)); // 🆕 NEW: Use your custom notification
     }
 }

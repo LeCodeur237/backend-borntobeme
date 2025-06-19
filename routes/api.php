@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\ContactController; // Import the new controller
 use App\Http\Controllers\API\CommentsController;
 use App\Http\Controllers\API\ArticlesController;
 use Illuminate\Http\Request;
@@ -20,6 +21,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::post('/register', [AuthController::class, 'register'])->name('register');
+
+// Public endpoint for contact form
+Route::post('/contact', [ContactController::class, 'send']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 

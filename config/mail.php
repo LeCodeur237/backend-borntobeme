@@ -114,4 +114,14 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Contact Form Recipient Address
+    |--------------------------------------------------------------------------
+    |
+    | Specify the email address that should receive submissions from the
+    | contact form.
+    |
+    */
+    'contact_form_to_address' => env('MAIL_CONTACT_FORM_TO_ADDRESS', env('MAIL_TO_ADDRESS', 'mmeannedzou@gmail.com')),
 ];

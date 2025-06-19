@@ -1418,6 +1418,84 @@
                 ]
             }
         },
+        "/contact": {
+            "post": {
+                "tags": [
+                    "Contact"
+                ],
+                "summary": "Send a contact form message",
+                "description": "Allows any user to send a message via the contact form to the application owner.",
+                "operationId": "sendContactForm",
+                "requestBody": {
+                    "description": "Contact form data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "message"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "description": "Sender's name",
+                                        "type": "string",
+                                        "example": "Visitor Name"
+                                    },
+                                    "email": {
+                                        "description": "Sender's email address",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "visitor@example.com"
+                                    },
+                                    "subject": {
+                                        "description": "Subject of the message",
+                                        "type": "string",
+                                        "example": "Inquiry about services",
+                                        "nullable": true
+                                    },
+                                    "message": {
+                                        "description": "The message content",
+                                        "type": "string",
+                                        "example": "I would like to know more about..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Message sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Your message has been sent successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "tags": [
@@ -2606,6 +2684,10 @@
         {
             "name": "Comments",
             "description": "Comment management endpoints (CRUD operations for comments - to be implemented)"
+        },
+        {
+            "name": "Contact",
+            "description": "Contact form submission endpoint"
         },
         {
             "name": "Books",

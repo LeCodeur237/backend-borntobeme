@@ -39,6 +39,7 @@ use OpenApi\Annotations as OA;
  * @OA\Tag(name="Users", description="User related endpoints (e.g., fetching authenticated user details)")
  * @OA\Tag(name="Articles", description="Article management endpoints (CRUD operations for articles)")
  * @OA\Tag(name="Comments", description="Comment management endpoints (CRUD operations for comments - to be implemented)")
+ * @OA\Tag(name="Contact", description="Contact form submission endpoint")
  *
  * @OA\Schema(
  *   schema="ValidationError",

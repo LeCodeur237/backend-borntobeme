@@ -76,15 +76,14 @@ class UserController extends Controller
      *      path="/users/{user_id}",
      *      operationId="updateUser",
      *      tags={"Users"},
-     *      summary="Update user information",
-     *      description="Updates user data. Admins can update any user (including role). Regular users can only update their own profile (excluding role).",
+     *      summary="Update user profile information",
+     *      description="Updates user's fullname, birthday, gender, profile photo, bio, and preferences. Admins can update any user. Regular users can only update their own profile.",
      *      security={{"bearerAuth":{}}},
      *      @OA\Parameter(name="user_id", in="path", description="ID of user to update (UUID format)", required=true, @OA\Schema(type="string", format="uuid")),
      *      @OA\RequestBody(
      *          required=true,
      *          description="User data to update. Use 'multipart/form-data' when uploading a profile photo.",
      *          @OA\MediaType(
-     *              mediaType="multipart/form-data",
      *              @OA\Schema(
      *                  type="object",
      *                  @OA\Property(property="fullname", type="string", example="Jane Doe Updated", nullable=true, description="User's full name"),
@@ -92,12 +91,10 @@ class UserController extends Controller
      *                  @OA\Property(property="datebirthday", type="string", format="date", example="1991-06-16", nullable=true, description="User's date of birth"),
      *                  @OA\Property(property="gender", type="string", enum={"male", "female", "other"}, example="female", nullable=true, description="User's gender"),
      *                  @OA\Property(property="linkphoto", type="string", format="binary", nullable=true, description="New profile photo file. Send null or omit to keep existing or remove if previously set to null."),
-     *                  @OA\Property(property="password", type="string", format="password", minLength=8, example="newSecurePassword123", description="Optional: Provide to change password", nullable=true),
-     *                  @OA\Property(property="password_confirmation", type="string", format="password", minLength=8, example="newSecurePassword123", description="Required if password is provided", nullable=true),
-     *                  @OA\Property(property="role", type="string", enum={"user", "admin", "editor"}, example="user", description="Admin only: Can update user role", nullable=true),
      *                  @OA\Property(property="bio", type="string", nullable=true, example="An updated bio about myself."),
      *                  @OA\Property(property="preferences", type="array", @OA\Items(type="string"), nullable=true, example={"hiking", "reading_updated"})
-     *              )
+     *              ),
+     *              mediaType="multipart/form-data"
      *          )
      *      ),
      *      @OA\Response(response=200, description="User updated successfully", @OA\JsonContent(ref="#/components/schemas/User")),
@@ -118,27 +115,18 @@ class UserController extends Controller
         }
 
         $rules = [
-            'fullname' => 'sometimes|required|string|max:255',
-            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->iduser, 'iduser')],
-            'datebirthday' => 'sometimes|required|date',
-            'gender' => ['sometimes', 'required', 'string', Rule::in(['male', 'female', 'other'])],
+            'fullname' => 'sometimes|string|max:255',
+            // Email updates are not part of this request based on the new requirements.
+            // If email update is needed, it should be explicitly added back or handled in a separate endpoint.
+            // 'email' => ['sometimes', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->iduser, 'iduser')],
+            'datebirthday' => 'sometimes|date',
+            'gender' => ['sometimes', 'string', Rule::in(['male', 'female', 'other'])],
             'linkphoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Updated for image upload
-            'password' => 'nullable|string|min:8|confirmed',
             // UserInfo fields
             'bio' => 'nullable|string|max:5000',
             'preferences' => 'nullable|array',
             'preferences.*' => 'sometimes|string|max:255', // Ensures each item in the array is a string
         ];
-
-        // Only admin can change the role
-        if ($authenticatedUser->role === 'admin') {
-            $rules['role'] = ['sometimes', 'required', 'string', Rule::in(['user', 'admin', 'editor'])];
-        } else {
-            // If a non-admin tries to update role, it will be ignored (or you can explicitly forbid it)
-            if ($request->has('role') && $request->input('role') !== $user->role) {
-                 return response()->json(['message' => 'Forbidden. You cannot change your own role.'], 403);
-            }
-        }
 
         $validator = Validator::make($request->all(), $rules);
 
@@ -151,7 +139,7 @@ class UserController extends Controller
         // Prepare data for User model update
         // Explicitly list fields to prevent mass assignment issues with file objects
         $userDataToUpdate = [];
-        $userModelFields = ['fullname', 'email', 'datebirthday', 'gender'];
+        $userModelFields = ['fullname', 'datebirthday', 'gender']; // Removed 'email'
         foreach ($userModelFields as $field) {
             if (array_key_exists($field, $validatedData)) {
                 $userDataToUpdate[$field] = $validatedData[$field];
@@ -183,14 +171,6 @@ class UserController extends Controller
         }
         // If 'linkphoto' was not sent in the request at all, it won't be in $userDataToUpdate,
         // and the existing photo will remain unchanged.
-
-        if (!empty($validatedData['password'])) { // Only update password if provided
-            $userDataToUpdate['password'] = $validatedData['password']; // Hashing is handled by mutator in User model
-        }
-        // Role update logic
-        if ($authenticatedUser->role === 'admin' && isset($validatedData['role'])) {
-            $userDataToUpdate['role'] = $validatedData['role'];
-        }
 
         if (!empty($userDataToUpdate)) {
             $user->update($userDataToUpdate);

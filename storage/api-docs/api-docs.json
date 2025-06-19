@@ -1516,8 +1516,8 @@
                 "tags": [
                     "Users"
                 ],
-                "summary": "Update user information",
-                "description": "Updates user data. Admins can update any user (including role). Regular users can only update their own profile (excluding role).",
+                "summary": "Update user profile information",
+                "description": "Updates user's fullname, birthday, gender, profile photo, bio, and preferences. Admins can update any user. Regular users can only update their own profile.",
                 "operationId": "updateUser",
                 "parameters": [
                     {
@@ -1573,33 +1573,6 @@
                                         "description": "New profile photo file. Send null or omit to keep existing or remove if previously set to null.",
                                         "type": "string",
                                         "format": "binary",
-                                        "nullable": true
-                                    },
-                                    "password": {
-                                        "description": "Optional: Provide to change password",
-                                        "type": "string",
-                                        "format": "password",
-                                        "minLength": 8,
-                                        "example": "newSecurePassword123",
-                                        "nullable": true
-                                    },
-                                    "password_confirmation": {
-                                        "description": "Required if password is provided",
-                                        "type": "string",
-                                        "format": "password",
-                                        "minLength": 8,
-                                        "example": "newSecurePassword123",
-                                        "nullable": true
-                                    },
-                                    "role": {
-                                        "description": "Admin only: Can update user role",
-                                        "type": "string",
-                                        "enum": [
-                                            "user",
-                                            "admin",
-                                            "editor"
-                                        ],
-                                        "example": "user",
                                         "nullable": true
                                     },
                                     "bio": {
